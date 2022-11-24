@@ -1,6 +1,8 @@
 # Versions Cleaner
 **:warning: This script is an experimental proof of concept for versions history cleaning**
 
+**It is using an unstable branch `[versions-cleaner](https://github.com/ambanum/OpenTermsArchive/tree/versions-cleaner)` of ambanum/OpenTermsArchive that exposes some needed core features**
+
 Along the life of an instance, unsatisfactory versions of documents might be extracted from snapshots. For example, they might be changes unrelated to terms, or empty documents, or change language… Such unsatisfactory versions decrease the value of the dataset: it becomes impossible to measure the actual number of changes, for example.
 
 Reviewing and cleaning the dataset entails correcting the history of declarations, identifying some snapshots to skip, and extracting new versions from the snapshots based on this information. In the end, the whole versions history will be rewritten and overwritten. The declarations will be completed. All the original snapshots are left unchanged and the previous state of the versions is still available, allowing auditability.

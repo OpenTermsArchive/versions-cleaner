@@ -1,0 +1,26 @@
+{
+  "name": "versions-cleaner",
+  "version": "0.0.1",
+  "description": "Tool to clean history of versions for an instance",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenTermsArchive/versions-cleaner.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "commander": "^9.4.1",
+    "config": "^3.3.8",
+    "deep-diff": "^1.0.2",
+    "inquirer": "^9.1.4",
+    "jsdom": "^20.0.3",
+    "open-terms-archive": "git+https://git@github.com/ambanum/OpenTermsArchive#versions-cleaner"
+  }
+}

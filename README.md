@@ -106,13 +106,13 @@ Add a new file in `config/development.js` with the following contents:
 History cleaning is much easier to do for one document type of one service at a time. So it is recommended to - choose which document (service ID and document type) you want to clean the history of and to iterate on services and document types once this one is done.
 
 ```sh
-node ./scripts/cleanup/index.js --interactive --serviceId $SERVICE_ID_YOU_WANT_TO_WORK_ON --document "$DOCUMENT_TYPE_YOU_WANT_TO_WORK_ON"
+node ./scripts/cleanup/index.js --interactive --serviceId $SERVICE_ID_YOU_WANT_TO_WORK_ON --documentType "$DOCUMENT_TYPE_YOU_WANT_TO_WORK_ON"
 ```
 
 For example:
 
 ```sh
-npm run clean -- --interactive --serviceId Aigle --document "General Conditions of Sale"
+npm run clean -- --interactive --serviceId Aigle --documentType "General Conditions of Sale"
 ```
 
 To exit the script, type <key>ctrl-C</key>.

@@ -2,9 +2,8 @@ import fs from 'fs';
 import fsPromise from 'fs/promises';
 import path from 'path';
 
-import config from 'config';
-
 import RepositoryFactory from '@opentermsarchive/engine/repository-factory';
+import config from 'config';
 
 export default class OutputFilesStructure {
   constructor(baseDir, { snapshotRepoConfig, versionRepoConfig }) {

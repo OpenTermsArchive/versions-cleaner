@@ -3,19 +3,18 @@ import os from 'node:os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { program } from 'commander';
-import config from 'config';
-import inquirer from 'inquirer';
-
 import { InaccessibleContentError } from '@opentermsarchive/engine/errors';
 import filter from '@opentermsarchive/engine/filter';
 import Record from '@opentermsarchive/engine/record';
 import services from '@opentermsarchive/engine/services';
+import { program } from 'commander';
+import config from 'config';
+import inquirer from 'inquirer';
 
 import Cleaner from './Cleaner.js';
 import DeclarationUtils from './DeclarationUtils.js';
-import OutputFilesStructure from './OutputFilesStructure.js';
 import logger, { colors, logColors } from './logger.js';
+import OutputFilesStructure from './OutputFilesStructure.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,7 +52,7 @@ if (programOptions.interactive) {
 
 logger.info('programOptions', programOptions);
 
-const loadHistory = async (serviceId) => services.loadWithHistory(serviceId != '*' ? [serviceId] : undefined);
+const loadHistory = async serviceId => services.loadWithHistory(serviceId != '*' ? [serviceId] : undefined);
 
 const main = async options => {
   logger.info('options', options);
@@ -80,7 +79,11 @@ const main = async options => {
     process.exit();
   }
 
-  const snapshotContentToSkip = await cleaner.initializeSnapshotContentsToSkip(serviceId, documentType, snapshotsRepository);
+  const snapshotContentToSkip = await Promise.all(cleaner.getSnapshotIdsToSkip(serviceId, documentType).map(async snapshotsId => {
+    const { content, mimeType } = await snapshotsRepository.findById(snapshotsId);
+
+    return filter({ pageDeclaration: DeclarationUtils.genericPageDeclaration, content, mimeType });
+  }));
 
   async function handleSnapshot(snapshot, options, params) {
     const { serviceId, documentType } = snapshot;
@@ -90,7 +93,7 @@ const main = async options => {
 
     logger.debug(colors.white(`${params.index}`.padStart(5, ' ')), '/', nbSnapshotsToProcess, colors.white(serviceId), '-', colors.white(documentType), '  ', 'Snapshot', snapshot.id, 'fetched at', snapshot.fetchDate.toISOString(), 'valid until', validUntil || 'now');
 
-    const { shouldSkip, reason } =cleaner.checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration);
+    const { shouldSkip, reason } = cleaner.checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration);
 
     if (shouldSkip) {
       logger.debug(`    ↳ Skipped: ${reason}`);

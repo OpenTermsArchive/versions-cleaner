@@ -4,7 +4,7 @@ import path from 'path';
 
 import config from 'config';
 
-import RepositoryFactory from 'open-terms-archive/repository-factory';
+import RepositoryFactory from '@opentermsarchive/engine/repository-factory';
 
 export default class FilesystemStructure {
   constructor(baseDir, { snapshotRepoConfig, versionRepoConfig }) {
@@ -22,11 +22,32 @@ export default class FilesystemStructure {
     this.targetVersionsRepository = RepositoryFactory.create(targetRepositoryConfig);
   }
 
-  static generateFileName(snapshot) {
+  static generateSnapshotFilename(snapshot) {
     return `${snapshot.fetchDate.toISOString().replace(/\.\d{3}/, '').replace(/:|\./g, '-')}-${snapshot.id}.html`;
   }
 
-  async init(servicesDeclarations) {
+  static async copyReadme(sourceRepository, targetRepository) {
+    const sourceRepositoryReadmePath = `${sourceRepository.path}/README.md`;
+    const targetRepositoryReadmePath = `${targetRepository.path}/README.md`;
+
+    const [firstReadmeCommit] = await sourceRepository.git.log(['README.md']);
+
+    if (!firstReadmeCommit) {
+      console.warn(`No commit found for README in ${sourceRepository.path}`);
+
+      return;
+    }
+
+    await fsPromise.copyFile(sourceRepositoryReadmePath, targetRepositoryReadmePath);
+    await targetRepository.git.add(targetRepositoryReadmePath);
+    await targetRepository.git.commit({
+      filePath: targetRepositoryReadmePath,
+      message: firstReadmeCommit.message,
+      date: firstReadmeCommit.date,
+    });
+  }
+
+  async initFolders(servicesDeclarations) {
     return Promise.all([ this.skippedPath, this.toCheckPath ].map(async folder =>
       Promise.all(Object.entries(servicesDeclarations).map(([ key, value ]) =>
         Promise.all(Object.keys(value.documents).map(documentName => {
@@ -55,35 +76,13 @@ export default class FilesystemStructure {
     };
   }
 
-  static async copyReadme(sourceRepository, targetRepository) {
-    const sourceRepositoryReadmePath = `${sourceRepository.path}/README.md`;
-    const targetRepositoryReadmePath = `${targetRepository.path}/README.md`;
-
-    const [firstReadmeCommit] = await sourceRepository.git.log(['README.md']);
-
-    if (!firstReadmeCommit) {
-      console.warn(`No commit found for README in ${sourceRepository.path}`);
-
-      return;
-    }
-
-    await fsPromise.copyFile(sourceRepositoryReadmePath, targetRepositoryReadmePath);
-    await targetRepository.git.add(targetRepositoryReadmePath);
-    await targetRepository.git.commit({
-      filePath: targetRepositoryReadmePath,
-      message: firstReadmeCommit.message,
-      date: firstReadmeCommit.date,
-    });
-  }
-
   async writeSkippedSnapshot(serviceId, documentType, snapshot) {
-    await fsPromise.writeFile(path.join(this.skippedPath, serviceId, documentType, FilesystemStructure.generateFileName(snapshot)), snapshot.content);
+    await fsPromise.writeFile(path.join(this.skippedPath, serviceId, documentType, FilesystemStructure.generateSnapshotFilename(snapshot)), snapshot.content);
   }
 
   async writeToCheckSnapshot(serviceId, documentType, snapshot) {
     const snapshotFolder = path.join(this.toCheckPath, serviceId, documentType);
-    const snapshotFilename = FilesystemStructure.generateFileName(snapshot);
-    const snapshotPath = path.join(snapshotFolder, snapshotFilename);
+    const snapshotPath = path.join(snapshotFolder, FilesystemStructure.generateSnapshotFilename(snapshot));
 
     await fsPromise.writeFile(snapshotPath, snapshot.content);
 

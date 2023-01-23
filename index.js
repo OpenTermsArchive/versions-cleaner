@@ -14,7 +14,7 @@ import services from 'open-terms-archive/services';
 
 import Cleaner from './Cleaner.js';
 import DeclarationUtils from './DeclarationUtils.js';
-import FilesystemStructure from './FilesystemStructure.js';
+import OutputFilesStructure from './OutputFilesStructure.js';
 import logger, { colors, logColors } from './logger.js';
 
 
@@ -30,8 +30,8 @@ const INSTANCE_NAME = DECLARATIONS_PATH.split('/').reverse()[1].replace('-declar
 const SNAPSHOTS_REPOSITORY_URL = `https://github.com/OpenTermsArchive/${INSTANCE_NAME}-snapshots`;
 // const VERSIONS_REPOSITORY_URL = `https://github.com/OpenTermsArchive/${INSTANCE_NAME}-versions`;
 
-const fileStructure = new FilesystemStructure(ROOT_OUTPUT, { snapshotRepoConfig: config.recorder.snapshots.storage, versionRepoConfig: config.recorder.versions.storage });
 const cleaner = new Cleaner(CLEANING_FOLDER_PATH);
+const outputFilesStructure = new OutputFilesStructure(ROOT_OUTPUT, { snapshotRepoConfig: config.recorder.snapshots.storage, versionRepoConfig: config.recorder.versions.storage });
 const declarationUtils = new DeclarationUtils(DECLARATIONS_PATH, { logger });
 
 program
@@ -65,9 +65,8 @@ const main = async options => {
 
   let servicesDeclarations = await loadHistory();
 
-  await fileStructure.init(servicesDeclarations);
-
-  const { versionsRepository, snapshotsRepository } = await fileStructure.initRepositories();
+  await outputFilesStructure.initFolders(servicesDeclarations);
+  const { versionsRepository, snapshotsRepository } = await outputFilesStructure.initRepositories();
 
   const totalNbSnapshots = await snapshotsRepository.count();
   const nbSnapshotsToProcess = (await snapshotsRepository.findAll()).filter(s => s.serviceId == serviceId && s.documentType == documentType).length;
@@ -96,7 +95,7 @@ const main = async options => {
 
     if (shouldSkip) {
       logger.debug(`    ↳ Skipped: ${reason}`);
-      await fileStructure.writeSkippedSnapshot(serviceId, documentType, snapshot);
+      await outputFilesStructure.writeSkippedSnapshot(serviceId, documentType, snapshot);
 
       return;
     }
@@ -140,7 +139,7 @@ const main = async options => {
       logger.debug('Generated with the following command');
       logger.debug(`git diff ${diffArgs.map(arg => arg.replace(' ', '\\ ')).join(' ')}`);
 
-      const toCheckSnapshotPath = await fileStructure.writeToCheckSnapshot(serviceId, documentType, snapshot);
+      const toCheckSnapshotPath = await outputFilesStructure.writeToCheckSnapshot(serviceId, documentType, snapshot);
 
       if (options.interactive) {
         const DECISION_VERSION_KEEP = 'Keep it';
@@ -244,7 +243,7 @@ const main = async options => {
       logger.error('    ↳ An error occured while filtering:', error.message);
 
       if (options.interactive) {
-        const toCheckSnapshotPath = await fileStructure.writeToCheckSnapshot(serviceId, documentType, snapshot);
+        const toCheckSnapshotPath = await outputFilesStructure.writeToCheckSnapshot(serviceId, documentType, snapshot);
 
         const DECISION_ON_ERROR_BYPASS = 'Bypass: I don\'t know yet';
         const DECISION_ON_ERROR_SKIP = 'Skip: content of this snapshot is unprocessable';
@@ -358,7 +357,7 @@ const main = async options => {
     }
   }
 
-  await fileStructure.finalize();
+  await outputFilesStructure.finalize();
 };
 
 if (programOptions.list) {

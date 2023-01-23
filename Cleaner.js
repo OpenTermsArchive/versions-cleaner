@@ -30,7 +30,7 @@ export default class Cleaner {
     return this.rules;
   }
 
-  update(newRules) {
+  updateRules(newRules) {
     this.rules = newRules;
     fs.writeFileSync(this.filePath, `${JSON.stringify(newRules, null, 2)}\n`);
   }
@@ -61,7 +61,7 @@ export default class Cleaner {
       },
     };
     // logger.debug(`${value} appended to ${field}`);
-    this.update(cleaningRules);
+    this.updateRules(cleaningRules);
   }
 
   getSnapshotIdsToSkip(serviceId, documentType) {

@@ -6,7 +6,7 @@ import config from 'config';
 
 import RepositoryFactory from '@opentermsarchive/engine/repository-factory';
 
-export default class FilesystemStructure {
+export default class OutputFilesStructure {
   constructor(baseDir, { snapshotRepoConfig, versionRepoConfig }) {
     this.skippedPath = path.join(baseDir, 'skipped');
     this.toCheckPath = path.join(baseDir, 'to-check');
@@ -76,11 +76,11 @@ export default class FilesystemStructure {
     };
   }
 
-  async writeSkippedSnapshot(serviceId, documentType, snapshot) {
+  async saveSkippedSnapshot(serviceId, documentType, snapshot) {
     await fsPromise.writeFile(path.join(this.skippedPath, serviceId, documentType, FilesystemStructure.generateSnapshotFilename(snapshot)), snapshot.content);
   }
 
-  async writeToCheckSnapshot(serviceId, documentType, snapshot) {
+  async saveToCheckSnapshot(serviceId, documentType, snapshot) {
     const snapshotFolder = path.join(this.toCheckPath, serviceId, documentType);
     const snapshotPath = path.join(snapshotFolder, FilesystemStructure.generateSnapshotFilename(snapshot));
 

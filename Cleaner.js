@@ -98,7 +98,7 @@ export default class Cleaner {
     return rules && rules.documents[serviceId] && rules.documents[serviceId][documentType] && rules.documents[serviceId][documentType].done;
   }
 
-  async initializeSnapshotContentToSkip(serviceId, documentType, repository) {
+  async initializeSnapshotContentsToSkip(serviceId, documentType, repository) {
     const snapshotsIds = this.getSnapshotIdsToSkip(serviceId, documentType);
   
     return Promise.all(snapshotsIds.map(async snapshotsId => {

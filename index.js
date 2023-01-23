@@ -17,7 +17,6 @@ import DeclarationUtils from './DeclarationUtils.js';
 import OutputFilesStructure from './OutputFilesStructure.js';
 import logger, { colors, logColors } from './logger.js';
 
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DECLARATIONS_PATH = config.services.declarationsPath;
@@ -81,7 +80,7 @@ const main = async options => {
     process.exit();
   }
 
-  const snapshotContentToSkip = await cleaner.initializeSnapshotContentToSkip(serviceId, documentType, snapshotsRepository);
+  const snapshotContentToSkip = await cleaner.initializeSnapshotContentsToSkip(serviceId, documentType, snapshotsRepository);
 
   async function handleSnapshot(snapshot, options, params) {
     const { serviceId, documentType } = snapshot;
@@ -95,7 +94,7 @@ const main = async options => {
 
     if (shouldSkip) {
       logger.debug(`    ↳ Skipped: ${reason}`);
-      await outputFilesStructure.writeSkippedSnapshot(serviceId, documentType, snapshot);
+      await outputFilesStructure.saveSkippedSnapshot(serviceId, documentType, snapshot);
 
       return;
     }
@@ -139,7 +138,7 @@ const main = async options => {
       logger.debug('Generated with the following command');
       logger.debug(`git diff ${diffArgs.map(arg => arg.replace(' ', '\\ ')).join(' ')}`);
 
-      const toCheckSnapshotPath = await outputFilesStructure.writeToCheckSnapshot(serviceId, documentType, snapshot);
+      const toCheckSnapshotPath = await outputFilesStructure.saveToCheckSnapshot(serviceId, documentType, snapshot);
 
       if (options.interactive) {
         const DECISION_VERSION_KEEP = 'Keep it';
@@ -243,7 +242,7 @@ const main = async options => {
       logger.error('    ↳ An error occured while filtering:', error.message);
 
       if (options.interactive) {
-        const toCheckSnapshotPath = await outputFilesStructure.writeToCheckSnapshot(serviceId, documentType, snapshot);
+        const toCheckSnapshotPath = await outputFilesStructure.saveToCheckSnapshot(serviceId, documentType, snapshot);
 
         const DECISION_ON_ERROR_BYPASS = 'Bypass: I don\'t know yet';
         const DECISION_ON_ERROR_SKIP = 'Skip: content of this snapshot is unprocessable';

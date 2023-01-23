@@ -7,10 +7,10 @@ import { program } from 'commander';
 import config from 'config';
 import inquirer from 'inquirer';
 
-import { InaccessibleContentError } from 'open-terms-archive/errors';
-import filter from 'open-terms-archive/filter';
-import Record from 'open-terms-archive/record';
-import services from 'open-terms-archive/services';
+import { InaccessibleContentError } from '@opentermsarchive/engine/errors';
+import filter from '@opentermsarchive/engine/filter';
+import Record from '@opentermsarchive/engine/record';
+import services from '@opentermsarchive/engine/services';
 
 import Cleaner from './Cleaner.js';
 import DeclarationUtils from './DeclarationUtils.js';

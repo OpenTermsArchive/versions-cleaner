@@ -21,6 +21,6 @@
     "deep-diff": "^1.0.2",
     "inquirer": "^9.1.4",
     "jsdom": "^20.0.3",
-    "open-terms-archive": "git+https://git@github.com/ambanum/OpenTermsArchive#versions-cleaner"
+    "@opentermsarchive/engine": "git+https://git@github.com/ambanum/OpenTermsArchive#versions-cleaner"
   }
 }

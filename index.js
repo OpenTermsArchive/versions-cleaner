@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import { program } from 'commander';
 import config from 'config';
 import inquirer from 'inquirer';
-import jsdom from 'jsdom';
 
 import { InaccessibleContentError } from 'open-terms-archive/errors';
 import filter from 'open-terms-archive/filter';
@@ -18,22 +17,21 @@ import DeclarationUtils from './DeclarationUtils.js';
 import FilesystemStructure from './FilesystemStructure.js';
 import logger, { colors, logColors } from './logger.js';
 
-const { JSDOM } = jsdom;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DECLARATIONS_PATH = config.services.declarationsPath;
 
 const ROOT_OUTPUT = path.resolve(__dirname, 'output');
-const CLEANING_FOLDER = path.join(DECLARATIONS_PATH, '../cleaning');
+const CLEANING_FOLDER_PATH = path.join(DECLARATIONS_PATH, '../cleaning');
 
 const INSTANCE_NAME = DECLARATIONS_PATH.split('/').reverse()[1].replace('-declarations', '');
 
 const SNAPSHOTS_REPOSITORY_URL = `https://github.com/OpenTermsArchive/${INSTANCE_NAME}-snapshots`;
 // const VERSIONS_REPOSITORY_URL = `https://github.com/OpenTermsArchive/${INSTANCE_NAME}-versions`;
 
-const cleaner = new Cleaner(CLEANING_FOLDER);
 const fileStructure = new FilesystemStructure(ROOT_OUTPUT, { snapshotRepoConfig: config.recorder.snapshots.storage, versionRepoConfig: config.recorder.versions.storage });
+const cleaner = new Cleaner(CLEANING_FOLDER_PATH);
 const declarationUtils = new DeclarationUtils(DECLARATIONS_PATH, { logger });
 
 program
@@ -84,7 +82,7 @@ const main = async options => {
     process.exit();
   }
 
-  const snapshotContentToSkip = await initializeSnapshotContentToSkip(serviceId, documentType, snapshotsRepository);
+  const snapshotContentToSkip = await cleaner.initializeSnapshotContentToSkip(serviceId, documentType, snapshotsRepository);
 
   async function handleSnapshot(snapshot, options, params) {
     const { serviceId, documentType } = snapshot;
@@ -94,7 +92,7 @@ const main = async options => {
 
     logger.debug(colors.white(`${params.index}`.padStart(5, ' ')), '/', nbSnapshotsToProcess, colors.white(serviceId), '-', colors.white(documentType), '  ', 'Snapshot', snapshot.id, 'fetched at', snapshot.fetchDate.toISOString(), 'valid until', validUntil || 'now');
 
-    const { shouldSkip, reason } = checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration);
+    const { shouldSkip, reason } =cleaner.checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration);
 
     if (shouldSkip) {
       logger.debug(`    ↳ Skipped: ${reason}`);
@@ -362,55 +360,6 @@ const main = async options => {
 
   await fileStructure.finalize();
 };
-
-async function initializeSnapshotContentToSkip(serviceId, documentType, repository) {
-  const snapshotsIds = cleaner.getSnapshotIdsToSkip(serviceId, documentType);
-
-  return Promise.all(snapshotsIds.map(async snapshotsId => {
-    const { content, mimeType } = await repository.findById(snapshotsId);
-
-    return filter({ pageDeclaration: DeclarationUtils.genericPageDeclaration, content, mimeType });
-  }));
-}
-
-function checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration) {
-  const { serviceId, documentType } = snapshot;
-
-  const { contentsToSkip, selectorsToSkip, missingRequiredSelectors } = cleaner.getDocumentRules(serviceId, documentType);
-
-  if (!(contentsToSkip || selectorsToSkip || missingRequiredSelectors)) {
-    return { shouldSkip: false };
-  }
-
-  const { window: { document: webPageDOM } } = new JSDOM(snapshot.content, { url: pageDeclaration.location, virtualConsole: new jsdom.VirtualConsole() });
-
-  const selectorToSkip = selectorsToSkip && selectorsToSkip.find(selector => webPageDOM.querySelectorAll(selector).length);
-  const missingRequiredSelector = missingRequiredSelectors && missingRequiredSelectors.find(selector => !webPageDOM.querySelectorAll(selector).length);
-  const contentToSkip = contentsToSkip && Object.entries(contentsToSkip).find(([ key, value ]) => webPageDOM.querySelector(key)?.innerHTML == value);
-
-  if (!(selectorToSkip || missingRequiredSelector || contentToSkip)) {
-    return { shouldSkip: false };
-  }
-
-  let reason;
-
-  if (selectorToSkip) {
-    reason = `its content matches a selector to skip: "${selectorToSkip}"`;
-  }
-
-  if (missingRequiredSelector) {
-    reason = `its content does not match a required selector: "${missingRequiredSelector}"`;
-  }
-
-  if (contentToSkip) {
-    reason = `its content matches a content to skip: ${contentToSkip}`;
-  }
-
-  return {
-    shouldSkip: true,
-    reason,
-  };
-}
 
 if (programOptions.list) {
   const servicesDeclarations = await services.loadWithHistory();

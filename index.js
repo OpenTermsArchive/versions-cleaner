@@ -54,6 +54,8 @@ if (programOptions.interactive) {
 
 logger.info('programOptions', programOptions);
 
+const loadHistory = async (serviceId) => services.loadWithHistory(serviceId != '*' ? [serviceId] : undefined);
+
 const main = async options => {
   logger.info('options', options);
   const serviceId = options.serviceId || '*';
@@ -61,9 +63,7 @@ const main = async options => {
   const hasFilter = serviceId != '*' || documentType != '*';
   const hasDocumentType = serviceId != '*' && documentType != '*';
 
-  const loadHistory = async () => services.loadWithHistory(serviceId != '*' ? [serviceId] : undefined);
-
-  let servicesDeclarations = await loadHistory();
+  let servicesDeclarations = await loadHistory(serviceId);
 
   await outputFilesStructure.initFolders(servicesDeclarations);
   const { versionsRepository, snapshotsRepository } = await outputFilesStructure.initRepositories();
@@ -71,9 +71,9 @@ const main = async options => {
   const totalNbSnapshots = await snapshotsRepository.count();
   const nbSnapshotsToProcess = (await snapshotsRepository.findAll()).filter(s => s.serviceId == serviceId && s.documentType == documentType).length;
 
-  logger.debug('Number of snapshot in the repository', logColors.info(totalNbSnapshots));
+  logger.debug('Number of snapshots in the repository', logColors.info(totalNbSnapshots));
   if (hasFilter) {
-    logger.debug('Number of snapshot for the specified service', logColors.info((nbSnapshotsToProcess)));
+    logger.debug('Number of snapshots for the specified service', logColors.info((nbSnapshotsToProcess)));
   }
 
   if (hasDocumentType && cleaner.isDocumentDone(serviceId, documentType)) {
@@ -308,7 +308,6 @@ const main = async options => {
   }
 
   let index = 1;
-
   let previousValidUntil = null;
 
   console.time('Total execution time');

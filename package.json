@@ -15,12 +15,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@opentermsarchive/engine": "git+https://git@github.com/ambanum/OpenTermsArchive#versions-cleaner",
     "colors": "^1.4.0",
     "commander": "^9.4.1",
     "config": "^3.3.8",
     "deep-diff": "^1.0.2",
+    "eslint": "^8.32.0",
+    "eslint-config-airbnb-base": "^15.0.0",
     "inquirer": "^9.1.4",
-    "jsdom": "^20.0.3",
-    "@opentermsarchive/engine": "git+https://git@github.com/ambanum/OpenTermsArchive#versions-cleaner"
+    "jsdom": "^20.0.3"
   }
 }

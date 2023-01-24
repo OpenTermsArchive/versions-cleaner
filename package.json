@@ -2,11 +2,11 @@
   "name": "versions-cleaner",
   "version": "0.0.1",
   "description": "Tool to clean history of versions for an instance",
-  "main": "index.js",
+  "main": "src/cli.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "node index.js"
+    "clean:versions": "node src/cli.js"
   },
   "repository": {
     "type": "git",

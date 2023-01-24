@@ -5,7 +5,7 @@ import path from 'path';
 import RepositoryFactory from '@opentermsarchive/engine/repository-factory';
 import config from 'config';
 
-export default class OutputFilesStructure {
+export default class VersionsOutput {
   constructor(baseDir, { snapshotRepoConfig, versionRepoConfig }) {
     this.skippedPath = path.join(baseDir, 'skipped');
     this.toCheckPath = path.join(baseDir, 'to-check');
@@ -67,7 +67,7 @@ export default class OutputFilesStructure {
       this.snapshotsRepository.initialize(),
     ]);
 
-    await FilesystemStructure.copyReadme(this.sourceVersionsRepository, this.targetVersionsRepository);
+    await VersionsOutput.copyReadme(this.sourceVersionsRepository, this.targetVersionsRepository);
 
     return {
       versionsRepository: this.targetVersionsRepository,
@@ -75,13 +75,17 @@ export default class OutputFilesStructure {
     };
   }
 
-  async saveSkippedSnapshot(serviceId, documentType, snapshot) {
-    await fsPromise.writeFile(path.join(this.skippedPath, serviceId, documentType, FilesystemStructure.generateSnapshotFilename(snapshot)), snapshot.content);
+  async saveSkippedSnapshot(snapshot) {
+    const snapshotPath = path.join(this.skippedPath, snapshot.serviceId, snapshot.documentType, VersionsOutput.generateSnapshotFilename(snapshot));
+
+    await fsPromise.writeFile(snapshotPath, snapshot.content);
+
+    return snapshotPath;
   }
 
-  async saveToCheckSnapshot(serviceId, documentType, snapshot) {
-    const snapshotFolder = path.join(this.toCheckPath, serviceId, documentType);
-    const snapshotPath = path.join(snapshotFolder, FilesystemStructure.generateSnapshotFilename(snapshot));
+  async saveToCheckSnapshot(snapshot) {
+    const snapshotFolder = path.join(this.toCheckPath, snapshot.serviceId, snapshot.documentType);
+    const snapshotPath = path.join(snapshotFolder, VersionsOutput.generateSnapshotFilename(snapshot));
 
     await fsPromise.writeFile(snapshotPath, snapshot.content);
 

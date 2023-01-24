@@ -10,7 +10,7 @@ const DEFAULT_CONTENT = {
 
 const { JSDOM } = jsdom;
 
-export default class Cleaner {
+export default class DeclarationsCleaner {
   constructor(baseDir, filename = 'index.json') {
     this.baseDir = baseDir;
     this.filename = filename;
@@ -45,7 +45,7 @@ export default class Cleaner {
     if (field == 'skipContent') {
       updatedValue = { ...document[field] || {}, ...value };
     } else if ([ 'skipCommit', 'skipSelector', 'skipMissingSelector' ].includes(field)) {
-      updatedValue = [ ...document[field] || [], value ];
+      updatedValue = [...new Set([ ...document[field] || [], value ])];
     } else if (field == 'done') {
       updatedValue = value;
     }

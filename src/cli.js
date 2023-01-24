@@ -274,7 +274,7 @@ const cleanVersions = async options => {
       logger.info(`${options.serviceId} - ${options.documentType} has been marked as done`);
       logger.warn("Don't forget to commit the changes");
       logger.info();
-      logger.info(`git add declarations/${options.serviceId}*`);
+      logger.info(`git add "declarations/${options.serviceId}*"`);
       logger.info('git add cleaning/index.json');
       logger.info(`git commit -m "Clean ${options.serviceId} ${options.documentType}"`);
     }

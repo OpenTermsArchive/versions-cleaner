@@ -3,6 +3,8 @@ import path from 'path';
 
 import DeepDiff from 'deep-diff';
 
+const removeUndefinedFields = obj => Object.keys(obj).forEach(key => obj[key] === undefined && delete obj[key]);
+
 export default class DeclarationUtils {
   static genericPageDeclaration = {
     location: 'http://service.example',
@@ -63,7 +65,7 @@ export default class DeclarationUtils {
     existingHistory[documentType] = [...existingHistory[documentType] || []];
 
     historyEntries.map(({ validUntil, ...historyEntry }) => {
-      const diff = DeepDiff.diff(historyEntry, currentJSONDeclaration);
+      const diff = DeepDiff.diff(removeUndefinedFields(historyEntry), removeUndefinedFields(currentJSONDeclaration));
 
       if (diff) {
         return { ...historyEntry, validUntil };

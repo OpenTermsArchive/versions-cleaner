@@ -193,8 +193,8 @@ export default class VersionsCleaner {
     this.declarationsCleaner.updateDocument(serviceId, documentType, 'done', true);
   }
 
-  updateHistory({ serviceId, documentType, documentDeclaration, validUntil }) {
-    this.declarationUtils.updateHistory(serviceId, documentType, documentDeclaration, { validUntil });
+  updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil }) {
+    this.declarationUtils.updateHistory(serviceId, documentType, documentDeclaration, { previousValidUntil });
   }
 
   getSnapshotCommitURL(commitId) {

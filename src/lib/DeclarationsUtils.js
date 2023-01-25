@@ -47,7 +47,7 @@ export default class DeclarationUtils {
     this.logger.info(JSON.stringify(DeclarationUtils.declarationToJSON(declaration), null, 2));
   }
 
-  async updateHistory(serviceId, documentType, documentDeclaration, { validUntil }) {
+  async updateHistory(serviceId, documentType, documentDeclaration, { previousValidUntil }) {
     const historyFullPath = path.join(this.baseDir, `${serviceId}.history.json`);
 
     if (!fs.existsSync(historyFullPath)) {
@@ -58,13 +58,13 @@ export default class DeclarationUtils {
 
     const existingHistory = JSON.parse(fs.readFileSync(historyFullPath).toString());
 
-    const historyEntries = existingHistory[documentType] || [];
+    let historyEntries = existingHistory[documentType] || [];
 
     let entryAlreadyExists = false;
 
     existingHistory[documentType] = [...existingHistory[documentType] || []];
 
-    historyEntries.map(({ validUntil, ...historyEntry }) => {
+    historyEntries = historyEntries.map(({ validUntil, ...historyEntry }) => {
       const diff = DeepDiff.diff(removeUndefinedFields(historyEntry), removeUndefinedFields(currentJSONDeclaration));
 
       if (diff) {
@@ -72,16 +72,16 @@ export default class DeclarationUtils {
       }
 
       entryAlreadyExists = true;
-      this.logger.info(`History entry is already present, updating validUntil to ${validUntil}`);
+      this.logger.info(`History entry is already present, updating validUntil to ${previousValidUntil}`);
 
-      return { ...historyEntry, validUntil };
+      return { ...historyEntry, validUntil: previousValidUntil };
     });
 
     if (entryAlreadyExists) {
       existingHistory[documentType] = historyEntries;
     } else {
       this.logger.info('History entry does not exist, creating one');
-      existingHistory[documentType] = [ ...historyEntries, { ...currentJSONDeclaration, validUntil }];
+      existingHistory[documentType] = [ ...historyEntries, { ...currentJSONDeclaration, validUntil: previousValidUntil }];
     }
 
     fs.writeFileSync(historyFullPath, `${JSON.stringify(existingHistory, null, 2)}\n`);

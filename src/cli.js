@@ -141,7 +141,7 @@ const cleanVersions = async options => {
         }
 
         if (decision == DECISION_VERSION_UPDATE) {
-          versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, validUntil: params.previousValidUntil });
+          versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil: params.previousValidUntil });
 
           logger.warn('History has been updated, you now need to fix the current declaration');
 
@@ -201,7 +201,7 @@ const cleanVersions = async options => {
         }
 
         if (decisionOnError == DECISION_ON_ERROR_UPDATE) {
-          versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, validUntil: params.previousValidUntil });
+          versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil: params.previousValidUntil });
 
           logger.warn('History has been updated, you now need to fix the current declaration');
 

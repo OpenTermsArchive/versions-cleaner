@@ -291,12 +291,14 @@ const cleanVersions = async options => {
 };
 
 if (programOptions.list) {
-  const choices = (await VersionsCleaner.getServiceDocumentTypes()).map(({ serviceId, documentType, isDone }) => ({ name: `${isDone ? '✅' : '❌'} ${serviceId} ${documentType}`, value: { serviceId, documentType } }));
+  const choices = (await VersionsCleaner.getServiceDocumentTypes()).map(({ serviceId, documentType, isDone }) => ({ name: `${isDone ? '✅' : '❌'} ${serviceId} ${documentType}`, value: { serviceId, documentType, isDone } }));
+  const defaultChoice = choices.findIndex(({ value }) => !value.isDone);
 
   const { serviceToClean } = await inquirer.prompt([{
     message: 'Choose a document to clean',
     type: 'list',
     pageSize: 20,
+    default: defaultChoice,
     choices,
     name: 'serviceToClean',
   }]);

@@ -73,7 +73,10 @@ export default class VersionsCleaner {
     this.versionsRepository = versionsRepository;
     this.snapshotsRepository = snapshotsRepository;
     this.nbSnapshots = await snapshotsRepository.count();
-    this.nbSnapshotsToProcess = (await snapshotsRepository.findAll()).filter(s => s.serviceId == this.serviceId && s.documentType == this.documentType).length;
+    const snapshots = (await snapshotsRepository.findAll()).filter(s => s.serviceId == this.serviceId && s.documentType == this.documentType);
+
+    this.nbSnapshotsToProcess = snapshots.length;
+    this.latestSnapshotDate = snapshots[snapshots.length - 1].fetchDate;
   }
 
   isDocumentDeclarationAlreadyDone() {
@@ -134,7 +137,7 @@ export default class VersionsCleaner {
     if (shouldSkipSnapshot) {
       await this.skipSnapshot(snapshot);
 
-      return ({ snapshot, documentDeclaration, skipSnapshot: shouldSkipSnapshot && reasonShouldSkipSnapshot });
+      return ({ snapshot, skipSnapshot: shouldSkipSnapshot && reasonShouldSkipSnapshot });
     }
 
     const version = await filter({
@@ -154,7 +157,7 @@ export default class VersionsCleaner {
 
     const { shouldSkip: shouldSkipVersion, reason: reasonShouldSkipVersion, diffString, diffArgs } = await this.checkIfVersionShouldBeSkipped(snapshot.serviceId, snapshot.documentType, version);
 
-    return { snapshot, documentDeclaration, version, diffString, diffArgs, record, skipVersion: shouldSkipVersion && reasonShouldSkipVersion };
+    return { snapshot, version, diffString, diffArgs, record, skipVersion: shouldSkipVersion && reasonShouldSkipVersion };
   }
 
   iterateSnapshots() {
@@ -190,7 +193,7 @@ export default class VersionsCleaner {
   }
 
   markAsDone({ serviceId, documentType }) {
-    this.declarationsCleaner.updateDocument(serviceId, documentType, 'done', true);
+    this.declarationsCleaner.updateDocument(serviceId, documentType, 'done', new Date());
   }
 
   updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil }) {

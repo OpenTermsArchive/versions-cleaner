@@ -38,13 +38,116 @@ const cleanVersions = async options => {
 
   const snapshotContentToSkip = await versionsCleaner.getSnapshotContentsToSkip();
 
+  function pickAction({ snapshot, params, documentDeclaration, serviceId, documentType, filteredSnapshotContent }) {
+    return async function (message, { version }) {
+      const toCheckSnapshotPath = await versionsCleaner.checkSnapshot(snapshot);
+
+      const DECISION_KEEP = 'Keep: The version is fine';
+      const DECISION_SKIP = 'Skip: content of this snapshot is unprocessable';
+      const DECISION_MAIN = version ? DECISION_KEEP : DECISION_SKIP;
+
+      const DECISION_BYPASS = 'Bypass: I don\'t know yet';
+      const DECISION_SKIP_CONTENT = 'Update: Define content to be skipped';
+      const DECISION_SKIP_SELECTOR = 'Update: Define selector to be skipped';
+      const DECISION_SKIP_MISSING_SELECTOR = 'Update: define selector that should not exist to be skipped';
+      const DECISION_SNAPSHOT = 'Show: Display HTML snapshot';
+      const DECISION_DECLARATION = 'Show: Display current declaration used';
+      const DECISION_UPDATE = 'History: Add entry in history, I will fix the declaration';
+      const DECISION_RETRY = 'Retry: I updated the declaration';
+
+      const { decision } = await inquirer.prompt([{
+        message,
+        type: 'list',
+        pageSize: 20,
+        choices: [
+          new inquirer.Separator('Decide'), DECISION_MAIN, DECISION_BYPASS, DECISION_RETRY, new inquirer.Separator('Analyze'), DECISION_SNAPSHOT, DECISION_DECLARATION, new inquirer.Separator('Update'), DECISION_SKIP_CONTENT, DECISION_SKIP_SELECTOR, DECISION_SKIP_MISSING_SELECTOR, DECISION_UPDATE ],
+        name: 'decision',
+      }]);
+
+      if ([ DECISION_KEEP, DECISION_BYPASS ].includes(decision)) {
+        // Pass to next snapshot
+      }
+
+      if (decision == DECISION_RETRY) {
+        logger.debug('Reloading declarations…');
+        await versionsCleaner.loadHistory();
+
+        return handleSnapshot(snapshot, params);
+      }
+
+      if (decision == DECISION_SKIP) {
+        snapshotContentToSkip.push(filteredSnapshotContent);
+        versionsCleaner.skipCommit({ serviceId, documentType, snapshotId: snapshot.id });
+      }
+
+      if (decision == DECISION_SNAPSHOT) {
+        const line = colors.grey(colors.underline(`${' '.repeat(process.stdout.columns)}`));
+
+        console.log(`\n\n${line}\n${colors.cyan(filteredSnapshotContent)}\n${line}\n\n`);
+        logger.info('');
+        logger.info('- Open it in your IDE');
+        logger.info(`open -a "Google Chrome" "${toCheckSnapshotPath}"`);
+        logger.info('');
+        logger.info('- Or see it online');
+        logger.info(versionsCleaner.getSnapshotCommitURL(snapshot.id));
+        await inquirer.prompt({ type: 'confirm', name: 'Click on the link above to see the snapshot and then click on continue' });
+
+        return handleSnapshot(snapshot, params);
+      }
+
+      if (decision == DECISION_DECLARATION) {
+        logger.info(JSON.stringify(VersionsCleaner.getDeclarationAsJSON(documentDeclaration), null, 2));
+        await inquirer.prompt({ type: 'confirm', name: 'Click to continue' });
+
+        return handleSnapshot(snapshot, params);
+      }
+
+      if (decision == DECISION_SKIP_CONTENT) {
+        const { skipContentSelector } = await inquirer.prompt({ type: 'input', name: 'skipContentSelector', message: 'CSS selector content will be selected from:' });
+        const { skipContentValue } = await inquirer.prompt({ type: 'input', name: 'skipContentValue', message: 'innerHTML which, if exactly the same as the content of the selector above, will have the snapshot skipped:' });
+
+        snapshotContentToSkip.push(version);
+        versionsCleaner.skipContent({ serviceId, documentType, selector: skipContentSelector, value: skipContentValue });
+
+        return handleSnapshot(snapshot, params);
+      }
+      if (decision == DECISION_SKIP_SELECTOR) {
+        const { skipSelector } = await inquirer.prompt({ type: 'input', name: 'skipSelector', message: 'CSS selector which, if present in the snasphot, will have it skipped:' });
+
+        versionsCleaner.skipSelector({ serviceId, documentType, selector: skipSelector });
+
+        return handleSnapshot(snapshot, params);
+      }
+
+      if (decision == DECISION_SKIP_MISSING_SELECTOR) {
+        const { skipMissingSelector } = await inquirer.prompt({ type: 'input', name: 'skipMissingSelector', message: 'CSS selector which, if present in the snasphot, will have it skipped' });
+
+        versionsCleaner.skipMissingSelector({ serviceId, documentType, selector: skipMissingSelector });
+
+        return handleSnapshot(snapshot, params);
+      }
+
+      if (decision == DECISION_UPDATE) {
+        versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil: params.previousValidUntil });
+
+        logger.warn('History has been updated, you now need to fix the current declaration');
+
+        return handleSnapshot(snapshot, params);
+      }
+    };
+  }
+
   async function handleSnapshot(originalSnapshot, params) {
     const snapshot = versionsCleaner.processSnapshotDocumentType(originalSnapshot);
-
     const { serviceId, documentType } = snapshot;
+    const documentDeclaration = versionsCleaner.getDocumentDeclarationFromSnapshot(snapshot);
+    const filteredSnapshotContent = await VersionsCleaner.getSnapshotFilteredContent(snapshot);
+
+    const pickActionForSnapshot = pickAction({ snapshot, params, documentDeclaration, serviceId, documentType, filteredSnapshotContent });
 
     try {
-      const { documentDeclaration, version, diffString, diffArgs, record, skipVersion, skipSnapshot } = await versionsCleaner.processSnapshot(snapshot);
+      const processedSnapshot = await versionsCleaner.processSnapshot(snapshot);
+      const { version, diffString, diffArgs, record, skipVersion, skipSnapshot } = processedSnapshot;
 
       if (skipSnapshot) {
         logger.debug(`    ↳ Skipped snapshot: ${skipSnapshot}`);
@@ -64,89 +167,8 @@ const cleanVersions = async options => {
         logger.debug(`git diff ${diffArgs.map(arg => arg.replace(' ', '\\ ')).join(' ')}`);
       }
 
-      const toCheckSnapshotPath = await versionsCleaner.checkSnapshot(snapshot);
-
       if (options.interactive) {
-        const DECISION_VERSION_KEEP = 'Keep: The version is fine';
-        const DECISION_VERSION_SKIP_CONTENT = 'Skip: Define content to be skipped';
-        const DECISION_VERSION_SKIP_SELECTOR = 'Skip: Define selector to be skipped';
-        const DECISION_VERSION_SKIP_MISSING_SELECTOR = 'Skip: define selector that should not exist to be skipped';
-        const DECISION_VERSION_SNAPSHOT = 'Show: Display HTML snapshot';
-        const DECISION_VERSION_DECLARATION = 'Show: Display current declaration used';
-        const DECISION_VERSION_UPDATE = 'History: Add entry in history, I will fix the declaration';
-        const DECISION_VERSION_RETRY = 'Retry: I updated the declaration';
-
-        const { decision } = await inquirer.prompt([{
-          message: 'A new version is available, is it valid?',
-          type: 'list',
-          pageSize: 20,
-          choices: [
-            new inquirer.Separator('Decide'), DECISION_VERSION_KEEP, DECISION_VERSION_RETRY, new inquirer.Separator('Analyze'), DECISION_VERSION_SNAPSHOT, DECISION_VERSION_DECLARATION, new inquirer.Separator('Update'), DECISION_VERSION_SKIP_CONTENT, DECISION_VERSION_SKIP_SELECTOR, DECISION_VERSION_SKIP_MISSING_SELECTOR, DECISION_VERSION_UPDATE ],
-          name: 'decision',
-        }]);
-
-        if (decision == DECISION_VERSION_KEEP) {
-          // Pass to next snapshot
-        }
-
-        if (decision == DECISION_VERSION_RETRY) {
-          logger.debug('Reloading declarations…');
-          await versionsCleaner.loadHistory();
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decision == DECISION_VERSION_SNAPSHOT) {
-          logger.info('');
-          logger.info('- Open it in your IDE');
-          logger.info(`open -a "Google Chrome" "${toCheckSnapshotPath}"`);
-          logger.info('');
-          logger.info('- Or see it online');
-          logger.info(versionsCleaner.getSnapshotCommitURL(snapshot.id));
-          await inquirer.prompt({ type: 'confirm', name: 'Click on the link above to see the snapshot and then click on continue' });
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decision == DECISION_VERSION_DECLARATION) {
-          logger.info(JSON.stringify(VersionsCleaner.getDeclarationAsJSON(documentDeclaration), null, 2));
-          await inquirer.prompt({ type: 'confirm', name: 'Click to continue' });
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decision == DECISION_VERSION_SKIP_CONTENT) {
-          const { skipContentSelector } = await inquirer.prompt({ type: 'input', name: 'skipContentSelector', message: 'CSS selector content will be selected from:' });
-          const { skipContentValue } = await inquirer.prompt({ type: 'input', name: 'skipContentValue', message: 'innerHTML which, if exactly the same as the content of the selector above, will have the snapshot skipped:' });
-
-          snapshotContentToSkip.push(version);
-          versionsCleaner.skipContent({ serviceId, documentType, selector: skipContentSelector, value: skipContentValue });
-
-          return handleSnapshot(snapshot, params);
-        }
-        if (decision == DECISION_VERSION_SKIP_SELECTOR) {
-          const { skipSelector } = await inquirer.prompt({ type: 'input', name: 'skipSelector', message: 'CSS selector which, if present in the snasphot, will have it skipped:' });
-
-          versionsCleaner.skipSelector({ serviceId, documentType, selector: skipSelector });
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decision == DECISION_VERSION_SKIP_MISSING_SELECTOR) {
-          const { skipMissingSelector } = await inquirer.prompt({ type: 'input', name: 'skipMissingSelector', message: 'CSS selector which, if present in the snasphot, will have it skipped' });
-
-          versionsCleaner.skipMissingSelector({ serviceId, documentType, selector: skipMissingSelector });
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decision == DECISION_VERSION_UPDATE) {
-          versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil: params.previousValidUntil });
-
-          logger.warn('History has been updated, you now need to fix the current declaration');
-
-          return handleSnapshot(snapshot, params);
-        }
+        await pickActionForSnapshot('A new version is available, is it valid?', { version });
       }
 
       const { id } = await versionsCleaner.saveRecord(record);
@@ -156,8 +178,6 @@ const cleanVersions = async options => {
       if (!(error instanceof InaccessibleContentError)) {
         throw error;
       }
-      const documentDeclaration = versionsCleaner.getDocumentDeclarationFromSnapshot(snapshot);
-      const filteredSnapshotContent = await VersionsCleaner.getSnapshotFilteredContent(snapshot);
 
       if (snapshotContentToSkip.find(contentToSkip => contentToSkip == filteredSnapshotContent)) {
         logger.debug('    ↳ Skipped: snapshot content is identical to one already skipped');
@@ -168,69 +188,7 @@ const cleanVersions = async options => {
       logger.error('    ↳ An error occured while filtering:', error.message);
 
       if (options.interactive) {
-        const toCheckSnapshotPath = await versionsCleaner.checkSnapshot(snapshot);
-
-        const DECISION_ON_ERROR_BYPASS = 'Bypass: I don\'t know yet';
-        const DECISION_ON_ERROR_SKIP = 'Skip: content of this snapshot is unprocessable';
-        const DECISION_ON_ERROR_DECLARATION = 'Show: Display current declaration used';
-        const DECISION_ON_ERROR_SNAPSHOT = 'Show: Display HTML snapshot';
-        const DECISION_ON_ERROR_UPDATE = 'History: Add entry in history. I will fix the declaration';
-        const DECISION_ON_ERROR_RETRY = 'Retry: I updated the declaration';
-
-        const { decisionOnError } = await inquirer.prompt([{
-          message: 'A version can not be created from this snapshot. What do you want to do?',
-          type: 'list',
-          pageSize: 20,
-          choices: [
-            new inquirer.Separator('Decide'), DECISION_ON_ERROR_BYPASS, DECISION_ON_ERROR_SKIP, new inquirer.Separator('Analyze'), DECISION_ON_ERROR_DECLARATION, DECISION_ON_ERROR_SNAPSHOT, new inquirer.Separator('Update'), DECISION_ON_ERROR_UPDATE, DECISION_ON_ERROR_RETRY ],
-          name: 'decisionOnError',
-        }]);
-
-        if (decisionOnError == DECISION_ON_ERROR_RETRY) {
-          logger.debug('Reloading declarations…');
-          await versionsCleaner.loadHistory();
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decisionOnError == DECISION_ON_ERROR_DECLARATION) {
-          logger.info(JSON.stringify(VersionsCleaner.getDeclarationAsJSON(documentDeclaration), null, 2));
-          await inquirer.prompt({ type: 'confirm', name: 'Click to continue' });
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decisionOnError == DECISION_ON_ERROR_UPDATE) {
-          versionsCleaner.updateHistory({ serviceId, documentType, documentDeclaration, previousValidUntil: params.previousValidUntil });
-
-          logger.warn('History has been updated, you now need to fix the current declaration');
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decisionOnError == DECISION_ON_ERROR_SNAPSHOT) {
-          const line = colors.grey(colors.underline(`${' '.repeat(process.stdout.columns)}`));
-
-          console.log(`\n\n${line}\n${colors.cyan(filteredSnapshotContent)}\n${line}\n\n`);
-          logger.info('');
-          logger.info('- Open it in your IDE');
-          logger.info(`open -a "Google Chrome" "${toCheckSnapshotPath}"`);
-          logger.info('');
-          logger.info('- Or see it online');
-          logger.info(versionsCleaner.getSnapshotCommitURL(snapshot.id));
-          await inquirer.prompt({ type: 'confirm', name: 'Click on the link above to see the snapshot and then click on continue' });
-
-          return handleSnapshot(snapshot, params);
-        }
-
-        if (decisionOnError == DECISION_ON_ERROR_SKIP) {
-          snapshotContentToSkip.push(filteredSnapshotContent);
-          versionsCleaner.skipCommit({ serviceId, documentType, snapshotId: snapshot.id });
-        }
-
-        if (decisionOnError == DECISION_ON_ERROR_BYPASS) {
-          // Pass to next snapshot
-        }
+        await pickActionForSnapshot('A version can not be created from this snapshot. What do you want to do?', { filteredSnapshotContent });
       }
     }
   }

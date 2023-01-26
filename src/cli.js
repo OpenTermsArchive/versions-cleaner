@@ -42,29 +42,53 @@ const cleanVersions = async options => {
     return async function (message, { version }) {
       const toCheckSnapshotPath = await versionsCleaner.checkSnapshot(snapshot);
 
-      const DECISION_KEEP = 'Keep: The version is fine';
-      const DECISION_SKIP = 'Skip: content of this snapshot is unprocessable';
+      const DECISION_KEEP = 'Keep: Version is fine';
+      const DECISION_SKIP = 'Skip: Content of this snapshot is unprocessable';
       const DECISION_MAIN = version ? DECISION_KEEP : DECISION_SKIP;
 
-      const DECISION_BYPASS = 'Bypass: I don\'t know yet';
+      const DECISION_BYPASS = 'Bypass: Decide later';
+      const DECISION_RETRY = 'Retry: Declaration updated';
+
+      const DECISION_SNAPSHOT_DATE = 'Show: Snapshot date';
+      const DECISION_SNAPSHOT_DATA = 'Show: Snapshot data';
+      const DECISION_SNAPSHOT = 'Show: HTML snapshot';
+      const DECISION_DECLARATION = 'Show: Current declaration used';
+
       const DECISION_SKIP_CONTENT = 'Update: Define content to be skipped';
       const DECISION_SKIP_SELECTOR = 'Update: Define selector to be skipped';
-      const DECISION_SKIP_MISSING_SELECTOR = 'Update: define selector that should not exist to be skipped';
-      const DECISION_SNAPSHOT = 'Show: Display HTML snapshot';
-      const DECISION_DECLARATION = 'Show: Display current declaration used';
+      const DECISION_SKIP_MISSING_SELECTOR = 'Update: Define selector that should not exist to be skipped';
       const DECISION_UPDATE = 'History: Add entry in history, I will fix the declaration';
-      const DECISION_RETRY = 'Retry: I updated the declaration';
 
       const { decision } = await inquirer.prompt([{
         message,
         type: 'list',
         pageSize: 20,
         choices: [
-          new inquirer.Separator('Decide'), DECISION_MAIN, DECISION_BYPASS, DECISION_RETRY, new inquirer.Separator('Analyze'), DECISION_SNAPSHOT, DECISION_DECLARATION, new inquirer.Separator('Update'), DECISION_SKIP_CONTENT, DECISION_SKIP_SELECTOR, DECISION_SKIP_MISSING_SELECTOR, DECISION_UPDATE ],
+          new inquirer.Separator('Decide'),
+          DECISION_MAIN,
+          DECISION_BYPASS,
+          DECISION_RETRY,
+          new inquirer.Separator('Analyze'),
+          DECISION_SNAPSHOT_DATE,
+          DECISION_SNAPSHOT_DATA,
+          DECISION_SNAPSHOT,
+          DECISION_DECLARATION,
+          new inquirer.Separator('Update'),
+          DECISION_SKIP_CONTENT,
+          DECISION_SKIP_SELECTOR,
+          DECISION_SKIP_MISSING_SELECTOR,
+          DECISION_UPDATE,
+        ],
         name: 'decision',
       }]);
 
       if ([ DECISION_KEEP, DECISION_BYPASS ].includes(decision)) {
+        // Pass to next snapshot
+      }
+
+      if (decision == DECISION_SKIP) {
+        snapshotContentToSkip.push(filteredSnapshotContent);
+        versionsCleaner.skipCommit({ serviceId, documentType, snapshotId: snapshot.id });
         // Pass to next snapshot
       }
 
@@ -75,9 +99,20 @@ const cleanVersions = async options => {
         return handleSnapshot(snapshot, params);
       }
 
-      if (decision == DECISION_SKIP) {
-        snapshotContentToSkip.push(filteredSnapshotContent);
-        versionsCleaner.skipCommit({ serviceId, documentType, snapshotId: snapshot.id });
+      if (decision == DECISION_SNAPSHOT_DATE) {
+        logger.info('');
+        logger.info(snapshot.fetchDate);
+        logger.info('');
+        await inquirer.prompt({ type: 'confirm', name: 'Click to continue' });
+
+        return handleSnapshot(snapshot, params);
+      }
+
+      if (decision == DECISION_SNAPSHOT_DATA) {
+        logger.info(snapshot);
+        await inquirer.prompt({ type: 'confirm', name: 'Click to continue' });
+
+        return handleSnapshot(snapshot, params);
       }
 
       if (decision == DECISION_SNAPSHOT) {

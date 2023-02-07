@@ -206,7 +206,7 @@ const cleanVersions = async options => {
         await pickActionForSnapshot('A new version is available, is it valid?', { version });
       }
 
-      const { id } = await versionsCleaner.saveRecord(record);
+      const { id } = await versionsCleaner.saveVersion(record);
 
       logger.info(`    ↳ Generated new version: ${id}`);
     } catch (error) {

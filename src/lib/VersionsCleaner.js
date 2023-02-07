@@ -168,7 +168,7 @@ export default class VersionsCleaner {
     return this.versionsOutput.saveToCheckSnapshot(snapshot);
   }
 
-  async saveRecord(record) {
+  async saveVersion(record) {
     return this.versionsRepository.save(record);
   }
 

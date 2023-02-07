@@ -43,9 +43,7 @@ const cleanVersions = async options => {
       const toCheckSnapshotPath = await versionsCleaner.checkSnapshot(snapshot);
 
       const DECISION_KEEP = 'Keep: Version is fine';
-      const DECISION_SKIP = 'Skip: Content of this snapshot is unprocessable';
-      const DECISION_MAIN = version ? DECISION_KEEP : DECISION_SKIP;
-
+      
       const DECISION_BYPASS = 'Bypass: Decide later';
       const DECISION_RETRY = 'Retry: Declaration updated';
 
@@ -53,11 +51,13 @@ const cleanVersions = async options => {
       const DECISION_SNAPSHOT_DATA = 'Show: Snapshot data';
       const DECISION_SNAPSHOT = 'Show: HTML snapshot';
       const DECISION_DECLARATION = 'Show: Current declaration used';
-
-      const DECISION_SKIP_CONTENT = 'Update: Define content to be skipped';
-      const DECISION_SKIP_SELECTOR = 'Update: Define selector to be skipped';
-      const DECISION_SKIP_MISSING_SELECTOR = 'Update: Define selector that should not exist to be skipped';
-      const DECISION_UPDATE = 'History: Add entry in history, I will fix the declaration';
+      
+      const DECISION_SKIP = 'Skip: Content of this snapshot is unprocessable';
+      const DECISION_SKIP_CONTENT = 'Define content: Skip when content within selector is found';
+      const DECISION_SKIP_SELECTOR = 'Define selector: Skip when this selector is found';
+      const DECISION_SKIP_MISSING_SELECTOR = 'Define selector: Skip when this selector is NOT found';
+      
+      const DECISION_UPDATE = 'Update: Add entry in history. ⚠️ Declaration should still be fixed';
 
       const { decision } = await inquirer.prompt([{
         message,
@@ -65,7 +65,7 @@ const cleanVersions = async options => {
         pageSize: 20,
         choices: [
           new inquirer.Separator('Decide'),
-          DECISION_MAIN,
+          ...(version ? [DECISION_KEEP] : []),
           DECISION_BYPASS,
           DECISION_RETRY,
           new inquirer.Separator('Analyze'),
@@ -73,10 +73,12 @@ const cleanVersions = async options => {
           DECISION_SNAPSHOT_DATA,
           DECISION_SNAPSHOT,
           DECISION_DECLARATION,
-          new inquirer.Separator('Update'),
+          new inquirer.Separator('Skip'),
+          DECISION_SKIP,
           DECISION_SKIP_CONTENT,
           DECISION_SKIP_SELECTOR,
           DECISION_SKIP_MISSING_SELECTOR,
+          new inquirer.Separator('Update'),
           DECISION_UPDATE,
         ],
         name: 'decision',

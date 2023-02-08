@@ -66,9 +66,9 @@ export default class DeclarationsCleaner {
 
   getSnapshotIdsToSkip(serviceId, documentType) {
     const snapshotsIds = Object.entries(this.getRules().documents)
-      .filter(([cleaningServiceId]) => [ '*', serviceId ].includes(cleaningServiceId))
+      .filter(([cleaningServiceId]) => [ '*', cleaningServiceId ].includes(serviceId))
       .map(([ , cleaningDocumentTypes ]) => Object.entries(cleaningDocumentTypes)
-        .filter(([cleaningDocumentType]) => [ '*', documentType ].includes(cleaningDocumentType))
+        .filter(([cleaningDocumentType]) => [ '*', cleaningDocumentType ].includes(documentType))
         .map(([ , { skipCommit }]) => skipCommit)
         .filter(skippedCommit => !!skippedCommit)
         .flat()).flat();

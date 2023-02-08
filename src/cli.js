@@ -20,8 +20,7 @@ program.parse(process.argv);
 const programOptions = program.opts();
 
 const cleanVersions = async options => {
-  logger.info('options', options);
-
+  logger.info('Retrieving snapshots...');
   const versionsCleaner = new VersionsCleaner({ serviceId: options.serviceId || '*', documentType: options.documentType || '*', logger });
 
   await versionsCleaner.init();
@@ -43,7 +42,7 @@ const cleanVersions = async options => {
       const toCheckSnapshotPath = await versionsCleaner.checkSnapshot(snapshot);
 
       const DECISION_KEEP = 'Keep: Version is fine';
-      
+
       const DECISION_BYPASS = 'Bypass: Decide later';
       const DECISION_RETRY = 'Retry: Declaration updated';
 
@@ -51,12 +50,12 @@ const cleanVersions = async options => {
       const DECISION_SNAPSHOT_DATA = 'Show: Snapshot data';
       const DECISION_SNAPSHOT = 'Show: HTML snapshot';
       const DECISION_DECLARATION = 'Show: Current declaration used';
-      
+
       const DECISION_SKIP = 'Skip: Content of this snapshot is unprocessable';
       const DECISION_SKIP_CONTENT = 'Define content: Skip when content within selector is found';
       const DECISION_SKIP_SELECTOR = 'Define selector: Skip when this selector is found';
       const DECISION_SKIP_MISSING_SELECTOR = 'Define selector: Skip when this selector is NOT found';
-      
+
       const DECISION_UPDATE = 'Update: Add entry in history. ⚠️ Declaration should still be fixed';
 
       const { decision } = await inquirer.prompt([{

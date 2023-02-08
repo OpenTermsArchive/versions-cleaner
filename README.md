@@ -28,16 +28,17 @@ The script follow this process:
 
 - Clone this project.
 - Install dependencies (`npm i`)
-- Clone all three repositories of the collection you wish to clean: `declarations`, `snapshots`, and `versions` and take not of their path.
+- Clone all three repositories of the collection you wish to clean: `declarations`, `snapshots`, and `versions`.
 
 ### Edit the configuration
 
-Add a new file in `config/development.js` with the following contents adapted to the path above:
+Add a new file in `config/development.json` with the following contents adapted to the path above:
 
 ```json
 {
   "services": {
-    "declarationsPath": "../${YOUR_INSTANCE}-declarations/declarations"
+    "declarationsPath": "../${YOUR_INSTANCE}-declarations/declarations",
+    "repository": "https://github.com/OpenTermsArchive/${YOUR_INSTANCE}-declarations.git"
   },
   "recorder": {
     "versions": {
@@ -75,9 +76,7 @@ Add a new file in `config/development.js` with the following contents adapted to
 ## Usage
 
 ```sh
-npm run clean:versions -- -h
-# or
-node src/cli.js -h
+npm run clean:versions -- --help
 ```
 
 Actions taken using this CLI script will be reflected in a file named `cleaning/index.json` saved in the declarations folder (Field `services.declarationsPath` in the config)
@@ -216,13 +215,14 @@ Once all documents have been cleaned correctly, new versions are ready to be pus
 
 Here is the procedure to follow in order to prevent conflicts
 
-- Stop instance on the server
+- Stop instance on the server `pm2 stop ota ota-release`
 - Retrieve all snapshots on your local machine
-- Create a tag and push it (in case something wrong happens)
-- Launch the cleaner in non interactive mode -> this will recreate the versions in the corresponding directory on your local machine
+- Retrieve all versions on your local machine
+- Create a tag `git tag vX` on the versions repository and push it (in case something wrong happens)
+- Launch the cleaner in non interactive mode `npm run clean` -> this will recreate the versions in the corresponding directory on your local machine
 - Verify that versions are correctly recorded (README on first commit, no reextract commits, etc...)
-- Force push on the repository version
+- Force push on the version repository
 - Reset origin hard in versions repository on the server
-- Relaunch the server
+- Relaunch the server `pm2 start ota ota-release`
 
 

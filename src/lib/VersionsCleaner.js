@@ -73,7 +73,11 @@ export default class VersionsCleaner {
     this.versionsRepository = versionsRepository;
     this.snapshotsRepository = snapshotsRepository;
     this.nbSnapshots = await snapshotsRepository.count();
-    const snapshots = (await snapshotsRepository.findAll()).filter(s => s.serviceId == this.serviceId && s.documentType == this.documentType);
+
+    const snapshots = (await snapshotsRepository.findAll())
+      .filter(s =>
+        (this.serviceId && this.serviceId != '*' ? s.serviceId == this.serviceId : true)
+        && (this.documentType && this.documentType != '*' ? s.documentType == this.documentType : true));
 
     this.nbSnapshotsToProcess = snapshots.length;
     this.latestSnapshotDate = snapshots[snapshots.length - 1].fetchDate;
@@ -121,7 +125,7 @@ export default class VersionsCleaner {
   }
 
   getDocumentDeclarationFromSnapshot(snapshot) {
-    return this.servicesDeclarations[this.serviceId].getDocumentDeclaration(snapshot.documentType, snapshot.fetchDate);
+    return this.servicesDeclarations[snapshot.serviceId].getDocumentDeclaration(snapshot.documentType, snapshot.fetchDate);
   }
 
   async processSnapshot(snapshot) {

@@ -190,13 +190,13 @@ const cleanVersions = async options => {
 
         return;
       }
-      if (skipVersion && params.index > 1) {
+      if (skipVersion && !params.first) {
         logger.debug(`    ↳ Skipped version: ${skipVersion}`);
 
         return;
       }
 
-      console.log(params.index === 1 ? colors.green(version) : diffString);
+      console.log(params.first ? colors.green(version) : diffString);
 
       if (diffArgs) {
         logger.debug('Generated with the following command');
@@ -204,7 +204,7 @@ const cleanVersions = async options => {
       }
 
       if (options.interactive) {
-        await pickActionForSnapshot('A new version is available, is it valid?', { version });
+        await pickActionForSnapshot(`A new version is available for "${serviceId} - ${documentType}", is it valid?`, { version });
       }
 
       const { id } = await versionsCleaner.saveVersion(record);
@@ -224,7 +224,7 @@ const cleanVersions = async options => {
       logger.error('    ↳ An error occured while filtering:', error.message);
 
       if (options.interactive) {
-        await pickActionForSnapshot('A version can not be created from this snapshot. What do you want to do?', { filteredSnapshotContent });
+        await pickActionForSnapshot(`A version can not be created from the snapshot of "${serviceId} - ${documentType}". What do you want to do?`, { filteredSnapshotContent });
       }
     }
   }
@@ -235,13 +235,15 @@ const cleanVersions = async options => {
   const previousValidUntil = {};
 
   for await (const snapshot of versionsCleaner.iterateSnapshots()) {
+    const firstOfType = !(previousValidUntil && previousValidUntil[snapshot.serviceId] && previousValidUntil[snapshot.serviceId][snapshot.documentType]);
+
     previousValidUntil[snapshot.serviceId] = previousValidUntil[snapshot.serviceId] || {};
     previousValidUntil[snapshot.serviceId][snapshot.documentType] = previousValidUntil[snapshot.serviceId][snapshot.documentType] || snapshot.fetchDate.toISOString();
 
     const { validUntil } = versionsCleaner.getDocumentDeclarationFromSnapshot(snapshot);
 
     logger.debug(colors.white(`${index}`.padStart(5, ' ')), '/', versionsCleaner.nbSnapshotsToProcess, colors.white(snapshot.serviceId), '-', colors.white(snapshot.documentType), '  ', 'Snapshot', snapshot.id, 'fetched at', snapshot.fetchDate.toISOString(), 'valid until', validUntil || 'now');
-    await handleSnapshot(snapshot, { index, previousValidUntil });
+    await handleSnapshot(snapshot, { index, previousValidUntil, first: firstOfType });
 
     index++;
     previousValidUntil[snapshot.serviceId][snapshot.documentType] = snapshot.fetchDate.toISOString();

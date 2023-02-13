@@ -172,7 +172,13 @@ If content of the snapshots has changed and declaration should be changed. Updat
 **Note** Declaration now has to be fixed with working selectors.
 When done, the [Retry](#retry) decision can be used
 
+### Finalize cleaning of one service and document type
 
+When reaching the last snapshot, several choices will be available
+
+- **Mark it as Done**: Cleaning went ok and all needed modifications have been done. This will add a new key `done: true` in the `cleaning/index.json` file and you will not be able to launch it again in interactive mode unless you remove the `done` key
+- **Restart in non-interactive mode**: Launch the same command without `--interactive`. This will create the versions repository with the current configuration
+- **Quit**: All modifications done are already included in the `cleaning/index.json` file but document will not be considered as `done`
 
 
 ### Clean all versions

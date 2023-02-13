@@ -165,7 +165,11 @@ export default class VersionsCleaner {
   }
 
   iterateSnapshots() {
-    return this.snapshotsRepository.iterate([`${this.serviceId}/${this.documentType}.*`]);
+    return this.snapshotsRepository.iterate([
+      `${this.serviceId}/${this.documentType}.*`,
+      // For Multi page documents
+      `${this.serviceId}/${this.documentType} #*.*`,
+    ]);
   }
 
   async checkSnapshot(snapshot) {

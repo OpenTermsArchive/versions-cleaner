@@ -183,20 +183,27 @@ const cleanVersions = async options => {
 
     try {
       const processedSnapshot = await versionsCleaner.processSnapshot(snapshot);
-      const { version, diffString, diffArgs, record, skipVersion, skipSnapshot } = processedSnapshot;
+      const { version, diffString, diffArgs, first, record, skipVersion, skipSnapshot, waitForAllPages, page, nbPages } = processedSnapshot;
 
       if (skipSnapshot) {
         logger.debug(`    ↳ Skipped snapshot: ${skipSnapshot}`);
 
         return;
       }
-      if (skipVersion && !params.first) {
+
+      if (waitForAllPages) {
+        logger.debug(`    ↳ Wait for all pages to generate version: ${page}/${nbPages}`);
+
+        return;
+      }
+
+      if (skipVersion) {
         logger.debug(`    ↳ Skipped version: ${skipVersion}`);
 
         return;
       }
 
-      console.log(params.first ? colors.green(version) : diffString);
+      console.log(first ? colors.green(version) : diffString);
 
       if (diffArgs) {
         logger.debug('Generated with the following command');

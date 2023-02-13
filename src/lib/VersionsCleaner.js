@@ -49,6 +49,17 @@ export default class VersionsCleaner {
     }
   }
 
+  /** FIXME Copied from Archivist */
+  static async generateDocumentFilteredContent(snapshots, pages) {
+    return (
+      await Promise.all(pages.map(async pageDeclaration => {
+        const { content, mimeType } = snapshots.find(({ pageId }) => pageId === pageDeclaration.id) || snapshots[0];
+
+        return filter({ content, mimeType, pageDeclaration });
+      }))
+    ).join('\n\n');
+  }
+
   constructor({ serviceId, documentType, logger }) {
     this.serviceId = serviceId;
     this.documentType = documentType;
@@ -81,6 +92,7 @@ export default class VersionsCleaner {
 
     this.nbSnapshotsToProcess = snapshots.length;
     this.latestSnapshotDate = snapshots[snapshots.length - 1].fetchDate;
+    this.multipageBuffer = {};
   }
 
   isDocumentDeclarationAlreadyDone() {
@@ -107,12 +119,21 @@ export default class VersionsCleaner {
     await fs.writeFile(tmpFilePath, version);
 
     const diffArgs = [ '--minimal', '--color=always', '--color-moved=zebra', `${serviceId}/${documentType}.md`, tmpFilePath ];
-
+    let firstVersion = false;
     const diffString = await this.versionsRepository.git.diff(diffArgs).catch(async error => {
-      if (!error.message.includes('Could not access')) {
-        throw error;
+      if (error.message.includes('Could not access')) {
+        // File does not yet exist
+        firstVersion = true;
+
+        return;
       }
+
+      throw error;
     });
+
+    if (firstVersion) {
+      return { shouldSkip: false, first: true, diffString: version, diffArgs };
+    }
 
     if (!diffString) {
       return {
@@ -132,9 +153,9 @@ export default class VersionsCleaner {
     const documentDeclaration = this.getDocumentDeclarationFromSnapshot(snapshot);
 
     const { pages: pageDeclarations } = documentDeclaration;
+    const { serviceId, documentType } = snapshot;
 
-    // FIXME This does not support multi page
-    const pageDeclaration = pageDeclarations[0];
+    const pageDeclaration = snapshot.pageId ? pageDeclarations.find(({ id }) => snapshot.pageId === id) : pageDeclarations[0];
 
     const { shouldSkip: shouldSkipSnapshot, reason: reasonShouldSkipSnapshot } = declarationsCleaner.checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration);
 
@@ -144,24 +165,35 @@ export default class VersionsCleaner {
       return ({ snapshot, skipSnapshot: shouldSkipSnapshot && reasonShouldSkipSnapshot });
     }
 
-    const version = await filter({
-      pageDeclaration,
-      content: snapshot.content,
-      mimeType: snapshot.mimeType,
-    });
+    this.multipageBuffer[serviceId] = this.multipageBuffer[serviceId] || {};
+    this.multipageBuffer[serviceId][documentType] = this.multipageBuffer[serviceId][documentType] || { snapshots: [] };
+    this.multipageBuffer[serviceId][documentType].snapshots.push(snapshot);
+
+    const { snapshots } = this.multipageBuffer[serviceId][documentType];
+
+    const page = snapshots.length;
+    const nbPages = pageDeclarations.length;
+
+    if (page < nbPages) {
+      return { snapshot, waitForAllPages: true, nbPages, page };
+    }
+
+    const version = await VersionsCleaner.generateDocumentFilteredContent(snapshots, pageDeclarations);
+
+    const { shouldSkip: shouldSkipVersion, reason: reasonShouldSkipVersion, diffString, diffArgs, first } = await this.checkIfVersionShouldBeSkipped(serviceId, documentType, version);
 
     const record = new Record({
       content: version,
-      serviceId: snapshot.serviceId,
-      documentType: snapshot.documentType,
-      snapshotId: snapshot.id,
+      snapshotIds: snapshots.map(({ id }) => id),
+      serviceId,
+      documentType,
       fetchDate: snapshot.fetchDate,
       mimeType: 'text/markdown',
     });
 
-    const { shouldSkip: shouldSkipVersion, reason: reasonShouldSkipVersion, diffString, diffArgs } = await this.checkIfVersionShouldBeSkipped(snapshot.serviceId, snapshot.documentType, version);
+    delete this.multipageBuffer[snapshot.serviceId][snapshot.documentType];
 
-    return { snapshot, version, diffString, diffArgs, record, skipVersion: shouldSkipVersion && reasonShouldSkipVersion };
+    return { snapshot, version, diffString, first, diffArgs, record, skipVersion: shouldSkipVersion && reasonShouldSkipVersion };
   }
 
   iterateSnapshots() {

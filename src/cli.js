@@ -232,19 +232,19 @@ const cleanVersions = async options => {
   console.time('Total execution time');
 
   let index = 1;
-  let previousValidUntil = null;
+  const previousValidUntil = {};
 
   for await (const snapshot of versionsCleaner.iterateSnapshots()) {
-    if (!previousValidUntil) {
-      previousValidUntil = snapshot.fetchDate.toISOString();
-    }
+    previousValidUntil[snapshot.serviceId] = previousValidUntil[snapshot.serviceId] || {};
+    previousValidUntil[snapshot.serviceId][snapshot.documentType] = previousValidUntil[snapshot.serviceId][snapshot.documentType] || snapshot.fetchDate.toISOString();
+
     const { validUntil } = versionsCleaner.getDocumentDeclarationFromSnapshot(snapshot);
 
     logger.debug(colors.white(`${index}`.padStart(5, ' ')), '/', versionsCleaner.nbSnapshotsToProcess, colors.white(snapshot.serviceId), '-', colors.white(snapshot.documentType), '  ', 'Snapshot', snapshot.id, 'fetched at', snapshot.fetchDate.toISOString(), 'valid until', validUntil || 'now');
     await handleSnapshot(snapshot, { index, previousValidUntil });
 
     index++;
-    previousValidUntil = snapshot.fetchDate.toISOString();
+    previousValidUntil[snapshot.serviceId][snapshot.documentType] = snapshot.fetchDate.toISOString();
   }
 
   console.timeEnd('Total execution time');

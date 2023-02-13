@@ -275,7 +275,7 @@ const cleanVersions = async options => {
     if (decisionEnd == DECISION_END_DONE) {
       versionsCleaner.markAsDone({ serviceId: options.serviceId, documentType: options.documentType });
       logger.info(`${options.serviceId} - ${options.documentType} has been marked as done`);
-      logger.warn("Don't forget to commit the changes");
+      logger.warn("Don't forget to commit the changes in the declarations repo");
       logger.info();
       logger.info(`git add "declarations/${options.serviceId}*"`);
       logger.info('git add cleaning/index.json');

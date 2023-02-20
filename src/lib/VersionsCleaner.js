@@ -146,11 +146,25 @@ export default class VersionsCleaner {
   }
 
   getDocumentDeclarationFromSnapshot(snapshot) {
-    return this.servicesDeclarations[snapshot.serviceId].getDocumentDeclaration(snapshot.documentType, snapshot.fetchDate);
+    const serviceDeclaration = this.servicesDeclarations[snapshot.serviceId];
+
+    if (!serviceDeclaration) {
+      return null;
+    }
+
+    return serviceDeclaration.getDocumentDeclaration(snapshot.documentType, snapshot.fetchDate);
   }
 
   async processSnapshot(snapshot) {
     const documentDeclaration = this.getDocumentDeclarationFromSnapshot(snapshot);
+
+    if (!documentDeclaration) {
+      // The document declaration does not exist anymore
+      // As no history file remains, it means that the snapshots were not meant
+      // to be recorded at all, so just skip them and don't mark anything in the cleaning file
+
+      return ({ snapshot, skipSnapshot: 'Declaration does not exist' });
+    }
 
     const { pages: pageDeclarations } = documentDeclaration;
     const { serviceId, documentType } = snapshot;

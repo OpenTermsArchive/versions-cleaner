@@ -247,7 +247,7 @@ const cleanVersions = async options => {
     previousValidUntil[snapshot.serviceId] = previousValidUntil[snapshot.serviceId] || {};
     previousValidUntil[snapshot.serviceId][snapshot.documentType] = previousValidUntil[snapshot.serviceId][snapshot.documentType] || snapshot.fetchDate.toISOString();
 
-    const { validUntil } = versionsCleaner.getDocumentDeclarationFromSnapshot(snapshot);
+    const { validUntil } = versionsCleaner.getDocumentDeclarationFromSnapshot(snapshot) || {};
 
     logger.debug(colors.white(`${index}`.padStart(5, ' ')), '/', versionsCleaner.nbSnapshotsToProcess, colors.white(snapshot.serviceId), '-', colors.white(snapshot.documentType), '  ', 'Snapshot', snapshot.id, 'fetched at', snapshot.fetchDate.toISOString(), 'valid until', validUntil || 'now');
     await handleSnapshot(snapshot, { previousValidUntil, first: firstOfType });

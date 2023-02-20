@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { InaccessibleContentError } from '@opentermsarchive/engine/errors';
 import filter from '@opentermsarchive/engine/filter';
 import Record from '@opentermsarchive/engine/record';
 import services from '@opentermsarchive/engine/services';
@@ -170,6 +171,10 @@ export default class VersionsCleaner {
     const { serviceId, documentType } = snapshot;
 
     const pageDeclaration = snapshot.pageId ? pageDeclarations.find(({ id }) => snapshot.pageId === id) : pageDeclarations[0];
+
+    if (!pageDeclaration) {
+      throw new InaccessibleContentError('Page declaration not found. Multi page snapshot seems to be used with a one page declaration');
+    }
 
     const { shouldSkip: shouldSkipSnapshot, reason: reasonShouldSkipSnapshot } = declarationsCleaner.checkIfSnapshotShouldBeSkipped(snapshot, pageDeclaration);
 

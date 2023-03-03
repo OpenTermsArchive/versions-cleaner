@@ -107,10 +107,16 @@ export default class VersionsCleaner {
   }
 
   async getSnapshotContentsToSkip() {
-    return Promise.all(declarationsCleaner.getSnapshotIdsToSkip(this.serviceId, this.documentType).map(async snapshotsId => {
-      const snapshot = await this.snapshotsRepository.findById(snapshotsId);
+    return Promise.all(declarationsCleaner.getSnapshotIdsToSkip(this.serviceId, this.documentType).map(async snapshotId => {
+      try {
+        const snapshot = await this.snapshotsRepository.findById(snapshotId);
 
-      return VersionsCleaner.getSnapshotFilteredContent(snapshot);
+        return VersionsCleaner.getSnapshotFilteredContent(snapshot);
+      } catch (e) {
+        console.error(`Snapshot ${snapshotId} not found`);
+
+        return '';
+      }
     }));
   }
 

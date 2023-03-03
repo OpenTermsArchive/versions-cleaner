@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@opentermsarchive/engine": "git+https://git@github.com/ambanum/OpenTermsArchive#versions-cleaner",
+    "@opentermsarchive/engine": "git+https://git@github.com/OpenTermsArchive/engine#versions-cleaner",
     "colors": "^1.4.0",
     "commander": "^9.4.1",
     "config": "^3.3.8",

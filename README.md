@@ -1,6 +1,6 @@
 # Versions Cleaner
 
-**This tool is currently using an unstable branch `[versions-cleaner](https://github.com/ambanum/OpenTermsArchive/tree/versions-cleaner)` of ambanum/OpenTermsArchive that exposes some needed core features**
+**This tool is currently using an unstable branch `[versions-cleaner](https://github.com/OpenTermsArchive/engine/tree/versions-cleaner)` of OpenTermsArchive/engine that exposes some needed core features**
 
 Along the life of an instance, unsatisfactory versions of documents might be extracted from snapshots. For example, they might be changes unrelated to terms, or empty documents, or documents in a different language… Such unsatisfactory versions decrease the value of the dataset and it becomes impossible to measure the actual number of changes, for example.
 

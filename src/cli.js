@@ -254,6 +254,10 @@ const cleanVersions = async options => {
 
     index++;
     previousValidUntil[snapshot.serviceId][snapshot.documentType] = snapshot.fetchDate.toISOString();
+
+    if (index % 10 === 0) {
+      console.log(`The script uses approximately ${Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100} / ${Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100} MB`);
+    }
   }
 
   console.timeEnd('Total execution time');

@@ -240,8 +240,31 @@ const cleanVersions = async options => {
 
   let index = 1;
   const previousValidUntil = {};
+  const iterateOptions = {};
+  
+  const progression = await versionsCleaner.getProgression();
 
-  for await (const snapshot of versionsCleaner.iterateSnapshots()) {
+  if (progression?.snapshotId) {
+    const answer = await inquirer.prompt({
+      type: 'list',
+      message: `Would you like to resume the previous run of ${progression.date} from the snapshot ID "${progression.snapshotId}"`,
+      name: 'resume',
+      choices: [{ name: 'Yes, resume previous run', value: true }, { name: 'No, reset the progression and restart from the beginning', value: false }],
+    });
+
+    if (answer.resume) {
+      logger.info('Resuming from snapshot', progression.snapshotId);
+      iterateOptions.from = progression.snapshotId;
+      index = progression.index;
+    } else {
+      await versionsCleaner.resetProgression();
+      await versionsCleaner.resetTargetVersions();
+    } 
+  } else {
+    await versionsCleaner.resetTargetVersions();
+  }
+
+  for await (const snapshot of versionsCleaner.iterateSnapshots(iterateOptions)) {
     const firstOfType = !(previousValidUntil && previousValidUntil[snapshot.serviceId] && previousValidUntil[snapshot.serviceId][snapshot.documentType]);
 
     previousValidUntil[snapshot.serviceId] = previousValidUntil[snapshot.serviceId] || {};
@@ -258,6 +281,8 @@ const cleanVersions = async options => {
     if (index % 10 === 0) {
       console.log(`The script uses approximately ${Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100} / ${Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100} MB`);
     }
+
+    await versionsCleaner.saveProgression(snapshot.id, index);
   }
 
   console.timeEnd('Total execution time');

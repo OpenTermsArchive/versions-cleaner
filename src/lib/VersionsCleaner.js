@@ -50,6 +50,22 @@ export default class VersionsCleaner {
     }
   }
 
+  async saveProgression(snapshotId, index) {
+    return this.declarationsCleaner.saveProgression(snapshotId, index);
+  }
+
+  async getProgression() {
+    return this.declarationsCleaner.getProgression();
+  }
+
+  async resetProgression() {
+    return this.declarationsCleaner.resetProgression();
+  }
+
+  async resetTargetVersions() {
+    return this.versionsOutput.resetTargetVersionsRepository();
+  }
+
   /** FIXME Copied from Archivist */
   static async generateDocumentFilteredContent(snapshots, pages) {
     return (

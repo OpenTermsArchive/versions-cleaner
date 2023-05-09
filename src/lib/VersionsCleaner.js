@@ -248,7 +248,7 @@ export default class VersionsCleaner {
     return this.snapshotsRepository.iterate([
       ...optionsAsArray,
       `${this.serviceId}/${this.documentType}.*`,
-      `${this.serviceId}/${this.documentType} #*.*`, // For Multi page documents
+      `${this.serviceId}/${this.documentType} #*.*`, // for terms with multiple source documents
     ]);
   }
 

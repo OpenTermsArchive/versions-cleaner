@@ -247,7 +247,7 @@ const cleanVersions = async options => {
   if (progress?.snapshotId) {
     const answer = await inquirer.prompt({
       type: 'list',
-      message: `Would you like to resume the previous run of ${progress.date} from the snapshot ID "${progress.snapshotId}"`,
+      message: `Would you like to resume the previous run from ${progress.date} at snapshot ID "${progress.snapshotId}"?`,
       name: 'resume',
       choices: [{ name: 'Yes, resume previous run', value: true }, { name: 'No, reset the progress and restart from the beginning', value: false }],
     });

@@ -56,7 +56,7 @@ const cleanVersions = async options => {
       const DECISION_SKIP_SELECTOR = 'Define selector: Skip when this selector is found';
       const DECISION_SKIP_MISSING_SELECTOR = 'Define selector: Skip when this selector is NOT found';
 
-      const DECISION_UPDATE = 'Update: Add entry in history. ⚠️ Declaration should still be fixed';
+      const DECISION_UPDATE = 'Update: Add entry in history. ⚠️  Declaration should still be fixed';
 
       const { decision } = await inquirer.prompt([{
         message,

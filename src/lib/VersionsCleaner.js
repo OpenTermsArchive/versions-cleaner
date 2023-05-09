@@ -50,6 +50,22 @@ export default class VersionsCleaner {
     }
   }
 
+  async saveProgress(snapshotId, index) {
+    return this.declarationsCleaner.saveProgress(snapshotId, index);
+  }
+
+  async getProgress() {
+    return this.declarationsCleaner.getProgress();
+  }
+
+  async resetProgress() {
+    return this.declarationsCleaner.resetProgress();
+  }
+
+  async resetTargetVersions() {
+    return this.versionsOutput.resetTargetVersionsRepository();
+  }
+
   /** FIXME Copied from Archivist */
   static async generateDocumentFilteredContent(snapshots, pages) {
     return (
@@ -77,7 +93,7 @@ export default class VersionsCleaner {
     this.servicesDeclarations = await services.loadWithHistory(this.serviceId != '*' ? [this.serviceId] : undefined);
   }
 
-  async init() {
+  async init(options = {}) {
     await this.loadHistory();
     await this.versionsOutput.initFolders(this.servicesDeclarations);
     const { versionsRepository, snapshotsRepository } = await this.versionsOutput.initRepositories();
@@ -221,11 +237,18 @@ export default class VersionsCleaner {
     return { snapshot, version, diffString, first, diffArgs, record, skipVersion: shouldSkipVersion && reasonShouldSkipVersion };
   }
 
-  iterateSnapshots() {
+  iterateSnapshots(options = {}) {
+    const optionsAsArray = [];
+
+    if (options.from) {
+      optionsAsArray.push(`${options.from}..HEAD`);
+      optionsAsArray.push('--');
+    }
+
     return this.snapshotsRepository.iterate([
+      ...optionsAsArray,
       `${this.serviceId}/${this.documentType}.*`,
-      // For Multi page documents
-      `${this.serviceId}/${this.documentType} #*.*`,
+      `${this.serviceId}/${this.documentType} #*.*`, // for terms with multiple source documents
     ]);
   }
 

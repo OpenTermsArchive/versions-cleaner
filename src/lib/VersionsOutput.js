@@ -63,16 +63,19 @@ export default class VersionsOutput {
   async initRepositories() {
     await Promise.all([
       this.sourceVersionsRepository.initialize(),
-      this.targetVersionsRepository.initialize().then(() => this.targetVersionsRepository.removeAll()),
+      this.targetVersionsRepository.initialize(),
       this.snapshotsRepository.initialize(),
     ]);
-
-    await VersionsOutput.copyReadme(this.sourceVersionsRepository, this.targetVersionsRepository);
 
     return {
       versionsRepository: this.targetVersionsRepository,
       snapshotsRepository: this.snapshotsRepository,
     };
+  }
+
+  async resetTargetVersionsRepository() {
+    await this.targetVersionsRepository.removeAll();
+    await VersionsOutput.copyReadme(this.sourceVersionsRepository, this.targetVersionsRepository);
   }
 
   async saveSkippedSnapshot(snapshot) {

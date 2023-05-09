@@ -22,6 +22,32 @@ export default class DeclarationsCleaner {
     });
   }
 
+  saveProgress(snapshotId, index) {
+    const rules = this.getRules();
+
+    rules.progress = {
+      snapshotId,
+      index,
+      date: new Date().toUTCString(),
+    };
+
+    this.updateRules(rules);
+  }
+
+  getProgress() {
+    const rules = this.getRules();
+
+    return rules.progress;
+  }
+
+  resetProgress() {
+    const rules = this.getRules();
+
+    delete rules.progress;
+
+    this.updateRules(rules);
+  }
+
   getRules() {
     if (!this.rules) {
       this.rules = JSON.parse(fs.readFileSync(this.filePath).toString());

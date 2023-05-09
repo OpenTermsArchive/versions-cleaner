@@ -56,7 +56,7 @@ const cleanVersions = async options => {
       const DECISION_SKIP_SELECTOR = 'Define selector: Skip when this selector is found';
       const DECISION_SKIP_MISSING_SELECTOR = 'Define selector: Skip when this selector is NOT found';
 
-      const DECISION_UPDATE = 'Update: Add entry in history. ⚠️ Declaration should still be fixed';
+      const DECISION_UPDATE = 'Update: Add entry in history. ⚠️  Declaration should still be fixed';
 
       const { decision } = await inquirer.prompt([{
         message,
@@ -240,8 +240,31 @@ const cleanVersions = async options => {
 
   let index = 1;
   const previousValidUntil = {};
+  const iterateOptions = {};
+  
+  const progress = await versionsCleaner.getProgress();
 
-  for await (const snapshot of versionsCleaner.iterateSnapshots()) {
+  if (progress?.snapshotId) {
+    const answer = await inquirer.prompt({
+      type: 'list',
+      message: `Would you like to resume the previous run from ${progress.date} at snapshot ID "${progress.snapshotId}"?`,
+      name: 'resume',
+      choices: [{ name: 'Yes, resume previous run', value: true }, { name: 'No, reset the progress and restart from the beginning', value: false }],
+    });
+
+    if (answer.resume) {
+      logger.info('Resuming from snapshot', progress.snapshotId);
+      iterateOptions.from = progress.snapshotId;
+      index = progress.index;
+    } else {
+      await versionsCleaner.resetProgress();
+      await versionsCleaner.resetTargetVersions();
+    } 
+  } else {
+    await versionsCleaner.resetTargetVersions();
+  }
+
+  for await (const snapshot of versionsCleaner.iterateSnapshots(iterateOptions)) {
     const firstOfType = !(previousValidUntil && previousValidUntil[snapshot.serviceId] && previousValidUntil[snapshot.serviceId][snapshot.documentType]);
 
     previousValidUntil[snapshot.serviceId] = previousValidUntil[snapshot.serviceId] || {};
@@ -258,6 +281,8 @@ const cleanVersions = async options => {
     if (index % 10 === 0) {
       console.log(`The script uses approximately ${Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100} / ${Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100} MB`);
     }
+
+    await versionsCleaner.saveProgress(snapshot.id, index);
   }
 
   console.timeEnd('Total execution time');

@@ -22,10 +22,10 @@ export default class DeclarationsCleaner {
     });
   }
 
-  saveProgression(snapshotId, index) {
+  saveProgress(snapshotId, index) {
     const rules = this.getRules();
 
-    rules.progression = {
+    rules.progress = {
       snapshotId,
       index,
       date: new Date().toUTCString(),
@@ -34,16 +34,16 @@ export default class DeclarationsCleaner {
     this.updateRules(rules);
   }
 
-  getProgression() {
+  getProgress() {
     const rules = this.getRules();
 
-    return rules.progression;
+    return rules.progress;
   }
 
-  resetProgression() {
+  resetProgress() {
     const rules = this.getRules();
 
-    delete rules.progression;
+    delete rules.progress;
 
     this.updateRules(rules);
   }

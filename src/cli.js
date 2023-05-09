@@ -242,22 +242,22 @@ const cleanVersions = async options => {
   const previousValidUntil = {};
   const iterateOptions = {};
   
-  const progression = await versionsCleaner.getProgression();
+  const progress = await versionsCleaner.getProgress();
 
-  if (progression?.snapshotId) {
+  if (progress?.snapshotId) {
     const answer = await inquirer.prompt({
       type: 'list',
-      message: `Would you like to resume the previous run of ${progression.date} from the snapshot ID "${progression.snapshotId}"`,
+      message: `Would you like to resume the previous run of ${progress.date} from the snapshot ID "${progress.snapshotId}"`,
       name: 'resume',
-      choices: [{ name: 'Yes, resume previous run', value: true }, { name: 'No, reset the progression and restart from the beginning', value: false }],
+      choices: [{ name: 'Yes, resume previous run', value: true }, { name: 'No, reset the progress and restart from the beginning', value: false }],
     });
 
     if (answer.resume) {
-      logger.info('Resuming from snapshot', progression.snapshotId);
-      iterateOptions.from = progression.snapshotId;
-      index = progression.index;
+      logger.info('Resuming from snapshot', progress.snapshotId);
+      iterateOptions.from = progress.snapshotId;
+      index = progress.index;
     } else {
-      await versionsCleaner.resetProgression();
+      await versionsCleaner.resetProgress();
       await versionsCleaner.resetTargetVersions();
     } 
   } else {
@@ -282,7 +282,7 @@ const cleanVersions = async options => {
       console.log(`The script uses approximately ${Math.round((process.memoryUsage().heapUsed / 1024 / 1024) * 100) / 100} / ${Math.round((process.memoryUsage().heapTotal / 1024 / 1024) * 100) / 100} MB`);
     }
 
-    await versionsCleaner.saveProgression(snapshot.id, index);
+    await versionsCleaner.saveProgress(snapshot.id, index);
   }
 
   console.timeEnd('Total execution time');

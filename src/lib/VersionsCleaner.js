@@ -50,16 +50,16 @@ export default class VersionsCleaner {
     }
   }
 
-  async saveProgression(snapshotId, index) {
-    return this.declarationsCleaner.saveProgression(snapshotId, index);
+  async saveProgress(snapshotId, index) {
+    return this.declarationsCleaner.saveProgress(snapshotId, index);
   }
 
-  async getProgression() {
-    return this.declarationsCleaner.getProgression();
+  async getProgress() {
+    return this.declarationsCleaner.getProgress();
   }
 
-  async resetProgression() {
-    return this.declarationsCleaner.resetProgression();
+  async resetProgress() {
+    return this.declarationsCleaner.resetProgress();
   }
 
   async resetTargetVersions() {
